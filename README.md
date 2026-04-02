@@ -43,21 +43,22 @@ Outputs:
 
 ---
 
-### 3. LLM Embeddings
-- Each chunk is converted into a vector using a language model (GPT-2)
-- Output:
-  - `chunk_embeddings.npy`
+### 3. Joint LLM + GNN Learning
+Instead of precomputing embeddings, this pipeline performs end-to-end training:
+  - Each node (text chunk) is processed as: text → tokenizer → GPT-2 → mean pooling → embedding → GNN → prediction
 
 ---
 
 ### 4. GNN Input Preparation
 - Load:
-  - node features (embeddings)
-  - edge_index (graph structure)
-  - edge_weight
-  - labels (author)
+	- raw texts (one per node)
+	- edge_index (graph structure)
+	- edge_weight
+	- labels (author)
+- Tokenization is performed once before training:
+	- text → input_ids + attention_mask
 - Output:
-  - tensors ready for training
+	- tensors ready for joint training
 
 ---
 
@@ -71,8 +72,16 @@ Outputs:
 - Default:
   - **GCN (with edge weights)**
 
+- Training:
+	- Forward pass:
+	  - GPT-2 computes embeddings
+	  - GNN performs message passing
+	- Loss:
+	  - CrossEntropy on node labels
+	- Backpropagation:
+	  - Updates both GPT-2 and GNN
 - Task:
-  - node classification (predict author)
+	- node classification (predict author)
 
 ---
 
@@ -123,8 +132,7 @@ project/
 │   ├── GRAPH_CONSTRUCTION_ANNOY.py
 │   ├── GNN_INPUT.py
 │   ├── GNN_MODELS.py
-│   ├── LLM_EMBEDDING.py
-│   └── TRAIN_GNN.py
+│   └── TRAIN_LLM_GNN.py
 │
 └── README.md
 ```
@@ -133,12 +141,12 @@ project/
 
 ## Run full pipeline + training
 ```bash
-python src/TRAIN_GNN.py
+python src/TRAIN_LLM_GNN.py
 ```
 
 This will:
 	1.	Build dataset
 	2.	Construct graph (WAN)
 	3.	Generate embeddings
-	4.	Train GNN
+	4.	Train LLM + GNN jointly
 	5.	Print accuracy
